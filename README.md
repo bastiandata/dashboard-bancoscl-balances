@@ -13,6 +13,10 @@ Con un fuerte interés en **Finanzas** y experiencia práctica en la **Prevenci�
   - **LTD (Loan-to-Deposit Ratio):** Índice clave de riesgo de liquidez y solidez frente a corridas bancarias o fraudes.
 - **Análisis Comparativo:** Evolución histórica del sistema bancario y desglose por entidad (depósitos, colocaciones, patrimonio, utilidad).
 - **Exportación de Datos:** Descarga de reportes en formato CSV para análisis posterior en herramientas analíticas o corporativas.
+  
+<img width="1417" height="903" alt="image" src="https://github.com/user-attachments/assets/2bf3186c-5c42-4d53-af33-f0cb5c63d67b" />
+
+<img width="1276" height="905" alt="image" src="https://github.com/user-attachments/assets/5e014e4c-6810-47c0-b730-6010d3cc109c" />
 
 ## 🛠️ Tecnologías Utilizadas
 - **Frontend:** HTML5, CSS3, Vanilla JavaScript.
