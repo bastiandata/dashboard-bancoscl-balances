@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Financiero - Bancos de Chile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-titles">
+                <h1>Sistema Bancario Chileno</h1>
+                <p class="subtitle">Balances Integrados API CMF Chile</p>
+            </div>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="periodYear">Período</label>
+                    <div class="period-selectors">
+                        <select id="periodMonth">
+                            <option value="01">Ene</option>
+                            <option value="02">Feb</option>
+                            <option value="03">Mar</option>
+                            <option value="04">Abr</option>
+                            <option value="05">May</option>
+                            <option value="06">Jun</option>
+                            <option value="07">Jul</option>
+                            <option value="08">Ago</option>
+                            <option value="09">Sep</option>
+                            <option value="10">Oct</option>
+                            <option value="11" selected>Nov</option>
+                            <option value="12">Dic</option>
+                        </select>
+                        <select id="periodYear">
+                            <option value="2026">2026</option>
+                            <option value="2025" selected>2025</option>
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                        </select>
+                        <button id="btnLoadPeriod" class="btn-primary">Actualizar</button>
+                    </div>
+                </div>
+                <div class="control-group bank-selector-group">
+                    <label for="bankSelect">Entidad Bancaria</label>
+                    <select id="bankSelect">
+                        <option value="ALL">Sistema Completo (Todos)</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Error Container -->
+        <div id="errorContainer" class="error-container hidden">
+            <p>⚠️ Error al conectar con API CMF. Verifica tu API Key o conectividad.</p>
+            <p id="errorMessage" style="font-size: 12px; margin-top: 5px; color: #f87171;"></p>
+            <button id="btnRetry" class="btn-primary" style="margin-top: 15px;">🔄 Reintentar</button>
+        </div>
+
+        <!-- Loader -->
+        <div id="loader" class="loader-container">
+            <div class="spinner"></div>
+            <p>Conectando con CMF Chile y procesando balances...</p>
+        </div>
+
+        <!-- Dashboard Content -->
+        <main id="dashboardContent" class="dashboard-content hidden">
+            <!-- KPIs -->
+            <section class="kpis-section">
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-blue"></div>
+                    <div class="kpi-data">
+                        <h3>Activo Total</h3>
+                        <p id="kpiActivo" class="kpi-value">--</p>
+                        <p class="kpi-unit">millones de CLP</p>
+                        <p id="kpiActivoVar" class="kpi-variation"></p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-green"></div>
+                    <div class="kpi-data">
+                        <h3>Depósitos Totales</h3>
+                        <p id="kpiDepositos" class="kpi-value">--</p>
+                        <p class="kpi-unit">millones de CLP</p>
+                        <p id="kpiDepositosVar" class="kpi-variation"></p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-purple"></div>
+                    <div class="kpi-data">
+                        <h3>Préstamos (Colocaciones)</h3>
+                        <p id="kpiPrestamos" class="kpi-value">--</p>
+                        <p class="kpi-unit">millones de CLP</p>
+                        <p id="kpiPrestamosVar" class="kpi-variation"></p>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon icon-orange"></div>
+                    <div class="kpi-data">
+                        <h3>Patrimonio</h3>
+                        <p id="kpiPatrimonio" class="kpi-value">--</p>
+                        <p class="kpi-unit">millones de CLP</p>
+                        <p id="kpiPatrimonioVar" class="kpi-variation"></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts -->
+            <section class="charts-section" id="chartsSection">
+                <div class="chart-card">
+                    <h3>Top 10 por Activo</h3>
+                    <div class="chart-container">
+                        <canvas id="chartTop10Activo"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Top 10 por Depósitos</h3>
+                    <div class="chart-container">
+                        <canvas id="chartTop10Depositos"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card pie-chart-card">
+                    <h3>Composición del Sistema</h3>
+                    <div class="chart-container">
+                        <canvas id="chartPie"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Table -->
+            <section class="table-section" id="tableSection">
+                <div class="table-header-flex" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                    <h3 style="margin-bottom: 0;">Ranking e Indicadores del Sistema</h3>
+                    <button id="btnExportCSV" class="btn-primary">⬇ Exportar CSV</button>
+                </div>
+                <div class="table-container">
+                    <table id="rankingTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Entidad</th>
+                                <th class="text-right">Activo Total</th>
+                                <th class="text-right">% Sis</th>
+                                <th class="text-right">Depósitos</th>
+                                <th class="text-right">Préstamos</th>
+                                <th class="text-right">Patrimonio</th>
+                                <th class="text-right">Resultado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Rows injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Single Bank Section -->
+            <section id="seccion-banco-individual" class="hidden single-bank-section" style="margin-top: 32px;">
+                <h2 style="margin-bottom: 24px;">Análisis Individual: <span id="individualBankName" style="color: var(--primary-blue);"></span></h2>
+                
+                <!-- Individual KPIs -->
+                <section class="kpis-section">
+                    <div class="kpi-card">
+                        <div class="kpi-icon icon-blue"></div>
+                        <div class="kpi-data">
+                            <h3>Activo Total</h3>
+                            <p id="kpiIndActivo" class="kpi-value">--</p>
+                            <p class="kpi-unit">millones de CLP</p>
+                            <p id="kpiIndActivoVar" class="kpi-variation"></p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon icon-green"></div>
+                        <div class="kpi-data">
+                            <h3>Depósitos Totales</h3>
+                            <p id="kpiIndDepositos" class="kpi-value">--</p>
+                            <p class="kpi-unit">millones de CLP</p>
+                            <p id="kpiIndDepositosVar" class="kpi-variation"></p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon icon-purple"></div>
+                        <div class="kpi-data">
+                            <h3>Préstamos (Colocaciones)</h3>
+                            <p id="kpiIndPrestamos" class="kpi-value">--</p>
+                            <p class="kpi-unit">millones de CLP</p>
+                            <p id="kpiIndPrestamosVar" class="kpi-variation"></p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon icon-orange"></div>
+                        <div class="kpi-data">
+                            <h3>Patrimonio</h3>
+                            <p id="kpiIndPatrimonio" class="kpi-value">--</p>
+                            <p class="kpi-unit">millones de CLP</p>
+                            <p id="kpiIndPatrimonioVar" class="kpi-variation"></p>
+                        </div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon icon-blue"></div>
+                        <div class="kpi-data">
+                            <h3>Resultado</h3>
+                            <p id="kpiIndResultado" class="kpi-value">--</p>
+                            <p class="kpi-unit">millones de CLP</p>
+                            <p id="kpiIndResultadoVar" class="kpi-variation"></p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Ratios Traffic Lights -->
+                <section class="ratios-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-bottom: 32px;">
+                    <div class="chart-card ratio-card" id="cardROA">
+                        <h3>ROA (Retorno sobre Activos)</h3>
+                        <p id="valROA" class="kpi-value" style="font-size: 28px; font-weight: 700;">--</p>
+                    </div>
+                    <div class="chart-card ratio-card" id="cardROE">
+                        <h3>ROE (Retorno sobre Patrimonio)</h3>
+                        <p id="valROE" class="kpi-value" style="font-size: 28px; font-weight: 700;">--</p>
+                    </div>
+                    <div class="chart-card ratio-card" id="cardLTD">
+                        <h3>LTD (Loan-to-Deposit)</h3>
+                        <p id="valLTD" class="kpi-value" style="font-size: 28px; font-weight: 700;">--</p>
+                    </div>
+                </section>
+
+                <div id="individualLoader" class="loader-container hidden" style="min-height: 200px;">
+                    <div class="spinner"></div>
+                    <p>Obteniendo historial de 12 meses...</p>
+                </div>
+
+                <div id="individualChartsContent">
+                    <!-- Historical Line Chart -->
+                    <div class="chart-card" style="margin-bottom: 32px;">
+                        <h3>Evolución del Balance (Últimos 12 meses)</h3>
+                        <div class="chart-container" style="height: 350px;">
+                            <canvas id="chartEvolucion"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Donuts lado a lado -->
+                    <div class="charts-section" style="grid-template-columns: 1fr 1fr;">
+                        <div class="chart-card">
+                            <h3>Composición de Activos</h3>
+                            <div class="chart-container">
+                                <canvas id="chartDonaActivoInd"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Composición de Pasivos y Patrimonio</h3>
+                            <div class="chart-container">
+                                <canvas id="chartDonaPasivoInd"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
